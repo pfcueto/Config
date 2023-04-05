@@ -9,6 +9,7 @@
 
 //$tab Periodo
 //============================================================================
+// Diferenciate SET and LET
 LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
 $(Must_Include=$(vG.Periodo))
 
