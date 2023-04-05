@@ -1,0 +1,198 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+D_Encounter:
+LOAD encounterId			                         as Uci_encounterId, 
+     patientId				                         as encounter_patientId, 
+     episodeId				                         as encounter_episodeId, 
+     lifeTimeNumber			                         as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)    as encounter_Name, 
+     gender					                    as encounter_gender, 
+     age					                         as encounter_age, 
+     patientType			                         as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd);
+
+//$tab PtCensus
+// Necessitem Data Ingres - Data Alta per assignar assessment dins del ingrés que pertany
+//============================================================================
+PtCensus:
+LOAD ptCensusId														as Uci_ptCensusId,
+	 clinicalUnitId													as Uci_clinicalUnitId,
+	 encounterId													as Uci_encounterId,
+	 date(inTime,'DD/MM/YYYY hh:mm')								as Uci_inTime, 
+     date(outTime,'DD/MM/YYYY hh:mm')								as Uci_outTime
+FROM
+$(vG.ExtractPath)PtCensus.qvd(qvd)
+where (clinicalUnitId='3')  and year(inTime)>=$(vYearMin);
+left join
+LOAD 
+	 Uci_encounterId, 
+     Uci_encounter_HC 
+resident D_Encounter;
+
+drop table D_Encounter;
+
+//$tab Dimensiones
+//============================================================================
+UCIMDB_TblENVINLocalizacionInfeccion:
+LOAD IdLocalizacionInfeccion 	as UciMdb_IdLocalizacionInfeccion, 
+     LocalizacionInfeccion		as UciMdb_LocalizacionInfeccion
+FROM
+$(vG.ExtractPath)UCIMDB_TblENVINLocalizacionInfeccion.qvd(qvd);
+
+UCIMDB_TblBacterias:
+LOAD IdBacteria 	as UciMdb_IdGermen, 
+     Bacteria		as UciMdb_Germen
+FROM
+$(vG.ExtractPath)UCIMDB_TblBacterias.qvd(qvd);
+
+UCIMDB_TblATB:
+LOAD IdATB			as UciMdb_IdATB, 
+     ATB			as UciMdb_ATB 
+FROM
+$(vG.ExtractPath)UCIMDB_TblATB.qvd(qvd);
+
+//$tab Cultivos
+//============================================================================
+UCIMDB_Cultivos:
+LOAD IdCultivo						as UciMdb_IdCultivo, 
+     IdInternacionUnidad 			as UciMdb_pk, 
+     IdInternacionUnidad, 
+     date(FCultivo,'DD/MM/YYYY') 	as UciMdb_FechaCultivo, 
+     TipoMuestra					as UciMdb_TipoMuestra, 
+     Observaciones					as UciMdb_Observaciones, 
+     Negativo						as UciMdb_Negativo, 
+     TipoInfeccion					as UciMdb_TipoInfeccion, 
+     if(Colonizacion,'Si','No')    	as UciMdb_Colonizacion, 
+     Origen							as UciMdb_Origen, 
+     Localizacion					as UciMdb_IdLocalizacionInfeccion, 
+     RespuestaInflamatoria			as UciMdb_RespuestaInflamatoria, 
+     Bacteriemia					as UciMdb_Bacteriemia, 
+     ExposicionFactorRiesgo			as UciMdb_ExposicionFactorRiesgo, 
+     ValidacionIntensivistas		as UciMdb_ValidacionIntensivistas, 
+     ATBAdecuado					as UciMdb_ATBAdecuado
+FROM
+$(vG.ExtractPath)UCIMDB_TblCultivos.qvd(qvd);
+left join
+LOAD UciMdb_IdLocalizacionInfeccion, 
+     UciMdb_LocalizacionInfeccion
+resident UCIMDB_TblENVINLocalizacionInfeccion;
+
+drop table UCIMDB_TblENVINLocalizacionInfeccion;
+
+UCIMDB_Antibiograma:
+LOAD IdAntibiograma			as UciMdb_IdAntibiograma, 
+     IdCultivo				as UciMdb_IdCultivo, 
+     Germen					as UciMdb_IdGermen, 
+     BLEA					as UciMdb_BLEA, 
+     Multirresistente		as UciMdb_Multirresistente,
+     If(BLEA=-1,'Si',If(Multirresistente=-1,'Si','No'))  as UciMdb_GMR
+FROM
+$(vG.ExtractPath)UCIMDB_TblAntibiograma.qvd(qvd);
+left join
+LOAD UciMdb_IdGermen, 
+     UciMdb_Germen
+resident UCIMDB_TblBacterias;
+
+drop table UCIMDB_TblBacterias;
+
+UCIMDB_Sensibilidad:
+LOAD IdSensibilidad		as UciMdb_IdSensibilidad, 
+     Antibiotico		as UciMdb_IdATB, 
+     Sensibilidad		as UciMdb_Sensibilidad, 
+     IdAntibiograma		as UciMdb_IdAntibiograma, 
+     CIM				as UciMdb_CIM
+FROM
+$(vG.ExtractPath)UCIMDB_TblSensibilidad.qvd(qvd);
+left join
+LOAD UciMdb_IdATB, 
+     UciMdb_ATB 
+resident UCIMDB_TblATB;
+
+drop table UCIMDB_TblATB;
+
+//$tab Main
+//============================================================================
+UCIMDB_Main2:
+LOAD 
+	 IdInternacionUnidad				as UciMdb_pk,
+     HistoriaClinica 					as Uci_encounter_HC, 
+     date(FechaIngreso,'DD/MM/YYYY')	     as UciMdb_FechaIngreso
+     //IdInternacionUnidad				as UciMdb_IntenacionUnidad
+FROM
+$(vG.ExtractPath)UCIMDB_Main.qvd(qvd)
+where exists(IdInternacionUnidad) and year(FechaIngreso)>=$(vYearMin);
+
+drop field IdInternacionUnidad;
+
+UCIMDB_Main1:
+Load
+	'2' as tmp2,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+	Uci_encounter_HC,
+	Uci_inTime,
+	Uci_outTime
+resident PtCensus;
+left join
+Load
+	UciMdb_pk,
+	Uci_encounter_HC, 
+	UciMdb_FechaIngreso
+    //UciMdb_IntenacionUnidad
+resident UCIMDB_Main2;
+
+drop table PtCensus;
+drop table UCIMDB_Main2;
+
+// Ens quedem els UCIMDB_Main del ingrés
+UCIMDB_Main:
+Load
+	'1'as tmp1,
+	*
+resident UCIMDB_Main1
+where UciMdb_FechaIngreso>=((Uci_inTime)-1) and UciMdb_FechaIngreso<=((Uci_outTime)+1);
+
+drop table UCIMDB_Main1;
+drop field tmp1,tmp2;
+
+//$tab LT
+//============================================================================
+LT_UciMdb:
+Load distinct
+	UciMdb_pk,
+	Uci_ptCensusId,
+	Uci_encounterId, 
+	Uci_clinicalUnitId,
+	UciMdb_FechaIngreso																		as Cal_pk,
+	UciMdb_FechaIngreso																		as Uci_Data
+resident UCIMDB_Main;
+
+
+STORE LT_UciMdb into $(vG.LoadPath)LT_UciMdb.qvd;
+DROP FIELD Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId from UCIMDB_Main;
+STORE UCIMDB_Main into $(vG.LoadPath)UCIMDB_Main.qvd;
+
+STORE UCIMDB_Cultivos into $(vG.LoadPath)UCIMDB_Cultivos.qvd;
+STORE UCIMDB_Antibiograma into $(vG.LoadPath)UCIMDB_Antibiograma.qvd;
+STORE UCIMDB_Sensibilidad into $(vG.LoadPath)UCIMDB_Sensibilidad.qvd;
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))

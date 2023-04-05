@@ -1,0 +1,64 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Extract
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+
+//$tab Conexion
+//============================================================================
+LET vG.Conexion=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Conexion.qvs';
+$(Must_Include=$(vG.Conexion))
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Pt
+//============================================================================
+PtAssessment:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtAssessment
+where year(storeTime)=$(vYearMax);
+STORE PtAssessment INTO $(vG.ExtractPath)PtAssessment_$(vYearMax).qvd (qvd);
+DROP TABLE PtAssessment;
+
+PtCensus:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtCensus;
+STORE PtCensus INTO $(vG.ExtractPath)PtCensus.qvd (qvd);
+DROP TABLE PtCensus;
+
+PtSiteCare:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtSiteCare;
+STORE PtSiteCare INTO $(vG.ExtractPath)PtSiteCare.qvd (qvd);
+DROP TABLE PtSiteCare;
+
+PtTreatment:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtTreatment;
+STORE PtTreatment INTO $(vG.ExtractPath)PtTreatment.qvd (qvd);
+DROP TABLE PtTreatment;
+
+PtDemographic:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtDemographic;
+STORE PtDemographic INTO $(vG.ExtractPath)PtDemographic.qvd (qvd);
+DROP TABLE PtDemographic;
+
+PtMedication:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtMedication;
+STORE PtMedication INTO $(vG.ExtractPath)PtMedication.qvd (qvd);
+DROP TABLE PtMedication;
+
+PtBedStay:
+SQL SELECT *
+FROM CISReportingDB.dbo.PtBedStay;
+STORE PtBedStay INTO $(vG.ExtractPath)PtBedStay.qvd (qvd);
+DROP TABLE PtBedStay;

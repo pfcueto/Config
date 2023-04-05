@@ -1,0 +1,10 @@
+//$tab SectionAccess
+//============================================================================
+Section Access;
+
+LOAD * INLINE [
+ACCESS, USERID, PASSWORD, NTNAME, GROUP
+ADMIN,SA,UCI1234,*,ALL
+];
+
+Section Application;

@@ -1,0 +1,62 @@
+
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Extract
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+
+//$tab Conexión MDB
+//============================================================================
+LET vG.Conexion=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Conexion_MDB.qvs';
+$(Must_Include=$(vG.Conexion))
+
+
+
+//$tab UCIMDB
+//============================================================================
+UCIMDB_TblCultivos:
+SQL SELECT *
+FROM TblCultivos;
+STORE UCIMDB_TblCultivos INTO $(vG.ExtractPath)UCIMDB_TblCultivos.qvd (qvd);
+DROP TABLE UCIMDB_TblCultivos;
+
+UCIMDB_TblAntibiograma:
+SQL SELECT *
+FROM TblAntibiograma;
+STORE UCIMDB_TblAntibiograma INTO $(vG.ExtractPath)UCIMDB_TblAntibiograma.qvd (qvd);
+DROP TABLE UCIMDB_TblAntibiograma;
+
+UCIMDB_TblBacterias:
+SQL SELECT *
+FROM TblBacterias;
+STORE UCIMDB_TblBacterias INTO $(vG.ExtractPath)UCIMDB_TblBacterias.qvd (qvd);
+DROP TABLE UCIMDB_TblBacterias;
+
+UCIMDB_TblSensibilidad:
+SQL SELECT *
+FROM TblSensibilidad;
+STORE UCIMDB_TblSensibilidad INTO $(vG.ExtractPath)UCIMDB_TblSensibilidad.qvd (qvd);
+DROP TABLE UCIMDB_TblSensibilidad;
+
+UCIMDB_TblATB:
+SQL SELECT *
+FROM TblATB;
+STORE UCIMDB_TblATB INTO $(vG.ExtractPath)UCIMDB_TblATB.qvd (qvd);
+DROP TABLE UCIMDB_TblATB;
+
+UCIMDB_TblENVINLocalizacionInfeccion:
+SQL SELECT *
+FROM TblENVINLocalizacionInfeccion;
+STORE UCIMDB_TblENVINLocalizacionInfeccion INTO $(vG.ExtractPath)UCIMDB_TblENVINLocalizacionInfeccion.qvd (qvd);
+DROP TABLE UCIMDB_TblENVINLocalizacionInfeccion;
+
+UCIMDB_Main:
+SQL SELECT *
+FROM QVD_Main;
+STORE UCIMDB_Main INTO $(vG.ExtractPath)UCIMDB_Main.qvd (qvd);
+DROP TABLE UCIMDB_Main;
+

@@ -1,0 +1,11 @@
+//$tab D_Encounter
+//============================================================================
+LU_Encounter:
+LOAD encounterId			as Uci_encounterId, 
+     rtrim(lifeTimeNumber)			as Paciente_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)	as Paciente_Nombre, 
+     gender					as Paciente_Sexo, 
+     age					as Paciente_Edad, 
+     patientType			as Paciente_Tipo
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd);

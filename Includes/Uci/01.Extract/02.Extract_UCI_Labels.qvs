@@ -1,0 +1,324 @@
+
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Extract
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+
+//$tab Conexion
+//============================================================================
+LET vG.Conexion=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Conexion.qvs';
+$(Must_Include=$(vG.Conexion))
+
+//$tab Labels
+//============================================================================
+D_Bed:
+LOAD bedId,
+    bedLabel;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Bed";
+STORE D_Bed INTO $(vG.ExtractPath)D_Bed.qvd (qvd);
+Drop table D_Bed;
+
+D_CareProvider:
+LOAD careProviderId,
+    professionalTitle,
+    firstName,
+    middleName,
+    lastName,
+    nameSuffix,
+    credentials,
+    nationalId,
+    initials,
+    employeeNumber,
+    professionalDomain,
+    professionalDomainId;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_CareProvider";
+STORE D_CareProvider INTO $(vG.ExtractPath)D_CareProvider.qvd (qvd);
+Drop table D_CareProvider;
+
+//Unidad de Ingreso
+D_ClinicalUnit:
+LOAD clinicalUnitId,
+    displayLabel,
+    type,
+    typeConcept,
+    department,
+    institution,
+    address1,
+    address2,
+    city,
+    region,
+    country,
+    postalCode,
+    isAnesthetizingLocation;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_ClinicalUnit";
+STORE D_ClinicalUnit INTO $(vG.ExtractPath)D_ClinicalUnit.qvd (qvd);
+Drop table D_ClinicalUnit;
+
+D_DataFocus:
+LOAD dataFocusId,
+    shortLabel,
+    longLabel,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_DataFocus";
+STORE D_DataFocus INTO $(vG.ExtractPath)D_DataFocus.qvd (qvd);
+Drop table D_DataFocus;
+
+D_Encounter:
+LOAD encounterId,
+    patientId,
+    episodeId,
+    lifeTimeNumber,
+    encounterNumber,
+    accountNumber,
+    firstName,
+    middleName,
+    lastName,
+    dateOfBirth,
+    gender,
+    ethnicGroup,
+    nationality,
+    race,
+    age,
+    patientType;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Encounter";
+STORE D_Encounter INTO $(vG.ExtractPath)D_Encounter.qvd (qvd);
+Drop table D_Encounter;
+
+D_Intervention:
+LOAD interventionId,
+    shortLabel,
+    longLabel,
+    type,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Intervention";
+STORE D_Intervention INTO $(vG.ExtractPath)D_Intervention.qvd (qvd);
+Drop table D_Intervention;
+
+D_Day:
+LOAD dayId,
+    calendarDay,
+    month,
+    year,
+    dayOfMonth,
+    dayOfYear,
+    dayText,
+    monthText;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Day";
+STORE D_Day INTO $(vG.ExtractPath)D_Day.qvd (qvd);
+Drop table D_Day;
+
+D_Charge:
+LOAD chargeId,
+    label,
+    chargeCategory,
+    chargeType,
+    amount;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Charge";
+STORE D_Charge INTO $(vG.ExtractPath)D_Charge.qvd (qvd);
+Drop table D_Charge;
+
+D_Service:
+LOAD serviceId,
+    shortLabel,
+    longLabel,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Service";
+STORE D_Service INTO $(vG.ExtractPath)D_Service.qvd (qvd);
+Drop table D_Service;
+
+
+D_Time:
+LOAD timeId,
+    hour,
+    minute;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Time";
+STORE D_Time INTO $(vG.ExtractPath)D_Time.qvd (qvd);
+Drop table D_Time;
+
+D_Case:
+LOAD caseId,
+    startTime,
+    endTime,
+    label;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Case";
+STORE D_Case INTO $(vG.ExtractPath)D_Case.qvd (qvd);
+Drop table D_Case;
+
+D_System:
+LOAD systemId,
+    displayLabel,
+    typeId;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_System";
+STORE D_System INTO $(vG.ExtractPath)D_System.qvd (qvd);
+Drop table D_System;
+
+D_Attribute:
+LOAD attributeId,
+    parentAttributeId,
+    shortLabel,
+    longLabel,
+    conceptLabel,
+    conceptCode,
+    hasChildren;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Attribute";
+STORE D_Attribute INTO $(vG.ExtractPath)D_Attribute.qvd (qvd);
+Drop table D_Attribute;
+
+D_Category:
+LOAD categoryId,
+    shortLabel,
+    sourceCategoryId,
+    type,
+    conceptLabel,
+    conceptCode,
+    activationId;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Category";
+STORE D_Category INTO $(vG.ExtractPath)D_Category.qvd (qvd);
+Drop table D_Category;
+
+D_DeviceSource:
+LOAD deviceSourceId,
+    sourceLabel,
+    deviceLabel;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_DeviceSource";
+STORE D_DeviceSource INTO $(vG.ExtractPath)D_DeviceSource.qvd (qvd);
+Drop table D_DeviceSource;
+
+D_Diagnosis:
+LOAD diagnosisId,
+    shortLabel,
+    longLabel,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Diagnosis";
+STORE D_Diagnosis INTO $(vG.ExtractPath)D_Diagnosis.qvd (qvd);
+Drop table D_Diagnosis;
+
+D_Document:
+LOAD documentId,
+    label,
+    conceptCode,
+    conceptLabel;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Document";
+STORE D_Document INTO $(vG.ExtractPath)D_Document.qvd (qvd);
+Drop table D_Document;
+
+D_INGRESOS_ALTAS:
+LOAD EncounterId,
+    NHC,
+    Nombre,
+    apellidos,
+    "fecha_nacimiento",
+    sexo,
+    edad,
+    "fecha_ingreso",
+    "fecha_alta";
+SQL SELECT *
+FROM CISReportingDB.dbo."D_INGRESOS_ALTAS";
+STORE D_INGRESOS_ALTAS INTO $(vG.ExtractPath)D_INGRESOS_ALTAS.qvd (qvd);
+Drop table D_INGRESOS_ALTAS;
+
+D_Intervention:
+LOAD interventionId,
+    shortLabel,
+    longLabel,
+    type,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Intervention";
+STORE D_Intervention INTO $(vG.ExtractPath)D_Intervention.qvd (qvd);
+Drop table D_Intervention;
+
+D_Material:
+LOAD materialId,
+    shortLabel,
+    longLabel,
+    type,
+    subType,
+    formularyCode,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Material";
+STORE D_Material INTO $(vG.ExtractPath)D_Material.qvd (qvd);
+Drop table D_Material;
+
+D_MaterialCategory:
+LOAD materialCategoryId,
+    categoryId,
+    materialId,
+    activationId;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_MaterialCategory";
+STORE D_MaterialCategory INTO $(vG.ExtractPath)D_MaterialCategory.qvd (qvd);
+Drop table D_MaterialCategory;
+
+D_Order:
+LOAD orderId,
+    shortLabel,
+    longLabel,
+    type,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Order";
+STORE D_Order INTO $(vG.ExtractPath)D_Order.qvd (qvd);
+Drop table D_Order;
+
+D_Shift:
+LOAD shiftId,
+    clinicalUnitId,
+    utcStartTime,
+    utcEndTime;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Shift";
+STORE D_Shift INTO $(vG.ExtractPath)D_Shift.qvd (qvd);
+Drop table D_Shift;
+
+D_Site:
+LOAD siteId,
+    displayLabel,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Site";
+STORE D_Site INTO $(vG.ExtractPath)D_Site.qvd (qvd);
+Drop table D_Site;
+
+D_Allergy:
+LOAD allergyId,
+    shortLabel,
+    longLabel,
+    conceptLabel,
+    conceptCode;
+SQL SELECT *
+FROM CISReportingDB.dbo."D_Allergy";
+STORE D_Allergy INTO $(vG.ExtractPath)D_Allergy.qvd (qvd);
+Drop table D_Allergy;
+

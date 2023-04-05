@@ -1,0 +1,168 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+D_ClinicalUnit:
+LOAD clinicalUnitId	as Uci_clinicalUnitId, 
+     displayLabel as Uci_clinicalUnit 
+FROM
+$(vG.ExtractPath)D_ClinicalUnit.qvd(qvd);
+
+D_Encounter:
+LOAD encounterId			as Uci_encounterId, 
+     patientId				as encounter_patientId, 
+     episodeId				as encounter_episodeId, 
+     lifeTimeNumber			as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)	as encounter_Name, 
+     gender					as encounter_gender, 
+     age					as encounter_age, 
+     patientType			as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd);
+
+D_Intervention:
+LOAD interventionId		as Uci_interventionId, 
+     shortLabel			as Uci_intervention
+FROM
+$(vG.ExtractPath)D_Intervention.qvd(qvd);
+
+D_CareProvider:
+LOAD careProviderId, 
+     lastName&','&firstName as careProvider_name, 
+      professionalDomain as careProvider_professionalDomain 
+FROM
+$(vG.ExtractPath)D_CareProvider.qvd(qvd);
+
+D_Bed:
+LOAD bedId, 
+     bedLabel
+FROM
+$(vG.ExtractPath)D_Bed.qvd(qvd);
+
+//$tab PtDemographic
+// Necessitem Servei, Procedencia, Patologia, Necropsia i Motivo Ingreso.
+// Agafem el valor més recent ordenat per storeTime agrupat per encounter.
+//============================================================================
+
+PtDemographic:
+LOAD ptDemographicId, 
+	 interventionId														as Uci_interventionId, 
+     attributeId														as Uci_attributeId, 
+     encounterId														as Uci_encounterId,      
+     dataFocusId,         
+     descriptorId, 
+     chartTime, 
+     utcChartTime, 
+     careProviderId, 
+     clinicalUnitId, 
+     materialId, 
+     siteId, 
+     terseForm, 
+     verboseForm, 
+     valueString, 
+     valueDateTime, 
+     utcValueDateTime, 
+     valueNumber, 
+     unitOfMeasure, 
+     baseValueNumber, 
+     baseUOM, 
+     valueInstanceId, 
+     valueConcept, 
+     lowerNormal, 
+     upperNormal, 
+     mainState, 
+     actionState, 
+     remark, 
+     chartDayId, 
+     chartTimeId, 
+     caseId, 
+     systemId, 
+     storeTime,
+     date(storeTime,'DD/MM/YYYY hh:mm')									as Uci_storeTime_hhmm, 
+     date(floor(storeTime),'DD/MM/YYYY')								as Uci_storeTime,
+     date(floor(storeTime),'DD/MM/YYYY') 								as Cal_pk,  
+     utcStoreTime, 
+     cisPtInterventionId, 
+     bedId, 
+     partNumberId, 
+     partNumber
+FROM
+$(vG.ExtractPath)PtDemographic.qvd(qvd)
+// Solo UCI
+where (clinicalUnitId='3') and year(storeTime)>=$(vYearMin);
+
+LU_Servicio:
+LOad
+	Uci_encounterId,
+	FirstValue(Capitalize(valueString)) as Uci_Servicio
+resident PtDemographic 
+where Uci_attributeId='7636' 
+group by Uci_encounterId
+order by storeTime desc;
+
+STORE LU_Servicio into $(vG.LoadPath)LU_Servicio.qvd;
+
+LU_Procedencia:
+LOad
+	Uci_encounterId,
+	FirstValue(Capitalize(valueString)) as Uci_Procedencia
+resident PtDemographic 
+where Uci_attributeId='6513' 
+group by Uci_encounterId
+order by storeTime desc;
+
+STORE LU_Procedencia into $(vG.LoadPath)LU_Procedencia.qvd;
+
+LU_Patologia:
+LOad
+	Uci_encounterId,
+	FirstValue(Capitalize(valueString)) as Uci_Patologia
+resident PtDemographic 
+where Uci_attributeId='17149' 
+group by Uci_encounterId
+order by storeTime desc;
+
+STORE LU_Patologia into $(vG.LoadPath)LU_Patologia.qvd;
+
+LU_Necropsia:
+LOad
+	Uci_encounterId,
+	FirstValue(Capitalize(valueString)) as Uci_Necropsia
+resident PtDemographic 
+where Uci_attributeId='8252' 
+group by Uci_encounterId
+order by storeTime desc;
+
+STORE LU_Necropsia into $(vG.LoadPath)LU_Necropsia.qvd;
+
+LU_MotivoIngreso:
+LOad
+	Uci_encounterId,
+	FirstValue(Capitalize(valueString)) as Uci_MotivoIngreso
+resident PtDemographic 
+where Match(Uci_attributeId,'55800','20358')
+group by Uci_encounterId
+order by storeTime desc;
+
+STORE LU_MotivoIngreso into $(vG.LoadPath)LU_MotivoIngreso.qvd;
+
+//SELECT *
+//FROM DBO.PtDemographic AS A
+//WHERE A.interventionId IN (43519) AND A.attributeId IN (55800)
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))

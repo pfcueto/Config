@@ -1,0 +1,6 @@
+﻿// Rutas Path
+let vG.ExtractPath=vG.BasePath&'SourceData\BaseQVDs\Uci\01.Extract\';
+let vG.ExtractPath_Shared=vG.BasePath&'SourceData\BaseQVDs\Uci\01.Extract\Shared\';
+let vG.TransformPath=vG.BasePath&'SourceData\BaseQVDs\Uci\02.Transform\';
+let vG.LoadPath=vG.BasePath&'SourceData\BaseQVDs\Uci\03.Load\';
+let vG.ImportPath_Interno=vG.BasePath&'Config\Excels\Uci\';

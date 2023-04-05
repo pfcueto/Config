@@ -1,0 +1,15 @@
+Cal_CALENDAR:
+LOAD
+ 	 date(Cal_Date,'DD/MM/YYYY') as Cal_pk, 
+ 	 Cal_Date,
+     Cal_Day,
+     Cal_DayMonth, 
+     Cal_Year, 
+     Cal_WeekDay, 
+     Cal_MonthNum, 
+     Cal_Month, 
+     Cal_MonthYear
+FROM
+$(vG.ExtractPath)QVD_CALENDAR.qvd
+(qvd)
+where Exists(Cal_pk);

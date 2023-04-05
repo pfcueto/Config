@@ -1,0 +1,5 @@
+﻿//-------------------------------------------------------------------------------------------------------------------------
+// CONEXIÓN
+//-------------------------------------------------------------------------------------------------------------------------
+//OLEDB CONNECT TO [Provider=SQLOLEDB.1;Persist Security Info=True;User ID=tic_ginsa;Initial Catalog=CISReportingDB;Data Source=10.0.33.20;Use Procedure for Prepare=1;Auto Translate=True;Packet Size=4096;Workstation ID=QLIKVIEWSRV;Use Encryption for Data=False;Tag with column collation when possible=False] (XPassword is HRMSCaFNDbXOWUZNTLYGD);
+OLEDB CONNECT TO [Provider=SQLOLEDB.1;Persist Security Info=True;User ID=qlik;Initial Catalog=CISReportingDB;Data Source=10.0.33.22;Use Procedure for Prepare=1;Auto Translate=True;Packet Size=4096;Workstation ID=QLIKVIEWSRV9;Use Encryption for Data=False;Tag with column collation when possible=False] (XPassword is AeCSNJVMVbcEDYIGRBCA);

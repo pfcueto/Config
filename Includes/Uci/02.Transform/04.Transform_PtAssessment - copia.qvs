@@ -1,0 +1,439 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+D_Encounter:
+LOAD encounterId			as Uci_encounterId, 
+     patientId				as encounter_patientId, 
+     episodeId				as encounter_episodeId, 
+     lifeTimeNumber			as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)	as encounter_Name, 
+     gender					as encounter_gender, 
+     age					as encounter_age, 
+     patientType			as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd);
+
+D_Intervention:
+LOAD interventionId			as Uci_interventionId, 
+     shortLabel				as Uci_intervention
+FROM
+$(vG.ExtractPath)D_Intervention.qvd(qvd);
+
+D_Attribute:
+LOAD attributeId			as Uci_attributeId, 
+     longLabel				as Uci_attribute
+FROM
+$(vG.ExtractPath)D_Attribute.qvd(qvd);
+
+D_CareProvider:
+LOAD careProviderId, 
+     lastName&','&firstName as careProvider_name, 
+      professionalDomain 	as careProvider_professionalDomain 
+FROM
+$(vG.ExtractPath)D_CareProvider.qvd(qvd);
+
+D_ClinicalUnit:
+LOAD clinicalUnitId			as Uci_clinicalUnitId, 
+     displayLabel 			as Uci_clinicalUnit 
+FROM
+$(vG.ExtractPath)D_ClinicalUnit.qvd(qvd);
+
+D_Bed:
+LOAD bedId, 
+     bedLabel
+FROM
+$(vG.ExtractPath)D_Bed.qvd(qvd);
+
+//$tab PtCensus
+// Necessitem Data Ingres - Data Alta per assignar assessment dins del ingrés que pertany
+//============================================================================
+PtCensus:
+LOAD ptCensusId														as Uci_ptCensusId,
+	 clinicalUnitId													as Uci_clinicalUnitId,
+	 encounterId													as Uci_encounterId,
+	 date(inTime,'DD/MM/YYYY hh:mm')								as Uci_inTime, 
+     date(outTime,'DD/MM/YYYY hh:mm')								as Uci_outTime
+FROM
+$(vG.ExtractPath)PtCensus.qvd(qvd)
+where (clinicalUnitId='3')  and year(inTime)>=$(vYearMin);
+
+//$tab PtAssessment
+// Necessitem Procediments VM, VMNI, Vigileo, SG, Traqueo, Picco
+//============================================================================
+PtAssessment:
+LOAD 
+	 ptAssessmentId														as Uci_ptAssessmentId,
+	 encounterId&'-'&date(floor(chartTime),'DD/MM/YYYY')				as Uci_encounterIdchartTime_pk,
+	 ptAssessmentId, 
+     ongoingId, 
+     interventionId														as Uci_interventionId, 
+     attributeId														as Uci_attributeId, 
+     encounterId														as Uci_encounterId, 
+     dataFocusId, 
+     chartTime,
+     date(chartTime,'DD/MM/YYYY hh:mm')									as Uci_chartTime_hhmm, 
+     date(floor(chartTime),'DD/MM/YYYY')								as Uci_chartTime,
+     // No chartTime, perdemos registros
+     date(floor(chartTime),'DD/MM/YYYY') 								as Cal_pk, 
+     utcChartTime, 
+     descriptorId, 
+     materialId, 
+     siteId, 
+     clinicalUnitId														as Uci_clinicalUnitId, 
+     careProviderId, 
+     terseForm															as Uci_terseform, 
+     verboseForm														as Uci_verboseForm, 
+     valueString														as Uci_valueString, 
+     valueDateTime														as Uci_valueDateTime, 
+     utcValueDateTime, 
+     valueNumber														as Uci_valueNumber, 
+     unitOfMeasure, 
+     baseValueNumber, 
+     baseUOM, 
+     valueInstanceId, 
+     valueConcept, 
+     upperNormal, 
+     lowerNormal, 
+     remark, 
+     mainState, 
+     actionState, 
+     chartDayId, 
+     chartTimeId														as Uci_chartTimeId, 
+     caseId, 
+     systemId, 
+     cisOrderId, 
+     storeTime, 
+     date(storeTime,'DD/MM/YYYY hh:mm')									as Uci_storeTime_hhmm, 
+     date(floor(storeTime),'DD/MM/YYYY')								as Uci_storeTime,
+     utcStoreTime, 
+     bedId, 
+     cisPtInterventionId, 
+     partNumberId, 
+     partNumber
+FROM
+$(vG.ExtractPath)PtAssessment_*.qvd(qvd)
+where clinicalUnitId='3' and year(chartTime)>=$(vYearMin);
+
+UCI_Assessment4:
+Load
+	'2' as tmp2,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId, 
+	Uci_inTime,
+	Uci_outTime
+resident PtCensus;
+left join
+Load
+	Cal_pk,
+	Uci_ptAssessmentId,
+	Uci_attributeId,
+	Uci_interventionId,
+	Uci_clinicalUnitId,				// left join
+	Uci_encounterId, 				// left join
+	//Uci_storeTime_hhmm,
+	//Uci_storeTime,
+	//Uci_chartTime_hhmm,
+	Uci_chartTime,
+	Uci_chartTimeId,
+	Uci_valueString,
+	Uci_terseform,
+	Uci_verboseForm,
+	Uci_chartTime_hhmm
+	//Uci_valueDateTime,
+	//Uci_valueNumber
+resident PtAssessment;
+drop table PtCensus;
+drop table PtAssessment;
+
+// Ens quedem els assessment del ingrés
+UCI_Assessment3:
+Load
+	'1'as tmp1,
+	*
+resident UCI_Assessment4
+//where Uci_chartTime_hhmm>=Uci_inTime and Uci_chartTime_hhmm<=Uci_outTime
+order by 
+Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+
+drop table UCI_Assessment4;
+
+/////////////////////////////////////////
+// Decubito_Posicion
+/////////////////////////////////////////
+UCI_Decubito1:
+Load
+	'1' as tmp1,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+	Uci_attributeId,
+	Uci_terseform,
+	Uci_verboseForm,
+	Uci_chartTime_hhmm,
+	Uci_chartTime
+resident UCI_Assessment3
+where Uci_attributeId='29425';
+
+UCI_Decubito2:
+Load
+	'2' as tmp2,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,  
+	Uci_attributeId,
+	Uci_terseform,
+	Uci_chartTime_hhmm,
+	Uci_chartTime
+resident UCI_Decubito1
+order by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_chartTime_hhmm;
+
+drop table UCI_Decubito1;
+
+UCI_Decubito3:
+Load
+ 	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,  
+	Uci_attributeId,
+	Uci_terseform,
+	Uci_chartTime_hhmm,
+	Uci_chartTime,
+	if(Uci_encounterId=Previous(Uci_encounterId) and Uci_terseform='D.Pro',Uci_chartTime_hhmm-previous(Uci_chartTime_hhmm),0) as Uci_Decubito_Pro_horas
+resident UCI_Decubito2;
+
+drop table UCI_Decubito2;
+
+//drop table UCI_Assessment3;
+//exit script;
+
+// Assessment diario para cada ingreso
+UCI_Assessment:
+// Decubito Pro
+Load distinct
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+	Only(Uci_encounterId)																			as Uci_Decubito_encounter, 
+	Uci_attributeId,
+	Uci_chartTime,
+	sum(Uci_Decubito_Pro_horas)																		as Uci_Decubito_Pro_horas
+resident UCI_Decubito3
+where Uci_Decubito_Pro_horas<>0
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+join
+// VM
+Load distinct
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+	Only(Uci_encounterId)																			as Uci_Vm_encounter, 
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime,
+	count(DISTINCT Uci_chartTime)																	as Uci_Vm_dias
+resident UCI_Assessment3
+where 
+//Variable ModoVM
+(Uci_attributeId='30211' and Uci_interventionId='4731' and (Uci_valueString='ACV' or Uci_valueString='ACV-autoflow' or Uci_valueString='BIPAP' 
+or  Uci_valueString='SIMV+PSV' or Uci_valueString='PSV' or Uci_valueString='PSV-Smart Care' or Uci_valueString='O2 on T' or Uci_valueString='CPAP'))
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+join
+// VMNI
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime 	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId, 
+	only(Uci_encounterId)																				as Uci_Vmni_encounter, 
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime,
+	count(distinct Uci_chartTime)																		as Uci_Vmni_dias
+resident UCI_Assessment3
+where Uci_attributeId='30211' and Uci_interventionId='4731' and (Uci_valueString='CPAP máscara' or Uci_valueString='PSV máscara')
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+join
+// Traqueostomia dias (TQT)
+// attributeId 44725 (Traqueostomia.Pressió de neumotaponam. trobat)
+// attributeId 44714 (Traqueostomia.Pressió de neumotaponam. deixat) 
+// Pitter: las que he observado que se controlan practicamente cada día que el paciente tiene la traqueostomia.
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&'447TQT'&'-'&Uci_chartTime 	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_chartTime,
+	only(Uci_encounterId)																				as Uci_Traqueo_encounter, 
+	Uci_encounterId, 
+	//Uci_interventionId,
+	//Uci_attributeId,
+	'447TQT' as Uci_attributeId,
+	count(distinct Uci_chartTime)																		as Uci_Traqueo_dias
+resident UCI_Assessment3
+where  Uci_attributeId='44725' or Uci_attributeId='44714'
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_chartTime;
+join
+// Intubació Orotraqueal dias (IOT)
+// attributeId 44759 TET.PresionNeumot encontrado
+// attributeId 44756 TET.PresionNeumot dejado
+// Pitter: los 2 atributes Id genera dos records por dia y no uno
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&'447TOT'&'-'&Uci_chartTime 	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_chartTime,
+	only(Uci_encounterId)																				as Uci_IntOro_encounter, 
+	Uci_encounterId, 
+	//Uci_interventionId,
+	//Uci_attributeId,
+	'447TOT' as Uci_attributeId,
+	count(distinct Uci_chartTime)																		as Uci_IntOro_dias
+resident UCI_Assessment3
+where  Uci_attributeId='44759' or Uci_attributeId='44756'
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_chartTime;
+join
+// VVS Vigileo
+// attributeId 44640 VVS.VVS
+// interventionId 6895 VVS.Vigileo
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime 	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId, 
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime,
+	max(Uci_chartTimeId)																				as Uci_VVS_Vigileo_min
+resident UCI_Assessment3
+where  Uci_attributeId='44640' and Uci_interventionId='6895'
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+join
+// RVS SG
+// attributeId 30479 Resistencia vascular sistemica.RVS.RVS
+// interventionId 2907 Resistencia vascular sistemica
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime 	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId, 
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime,
+	max(Uci_chartTimeId)																				as Uci_RVS_SG_min
+resident UCI_Assessment3
+where  Uci_attributeId='30479' and Uci_interventionId='2907'
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+join
+// EVLWI PICCO
+// attributeId 21436 EVLWI.EVLWI
+// interventionId 642 EVLWI
+Load
+	Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime	as Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId, 
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime,
+	max(Uci_chartTimeId)																			as Uci_EVLWI_PICCO_min
+resident UCI_Assessment3
+where  Uci_attributeId='21436' and Uci_interventionId='642'
+group by Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_chartTime;
+
+drop table UCI_Decubito3;
+
+UCI_Assessment_Dxs2:
+// Diagnosticos Principal y Secundarios
+LOAD
+	//Uci_ptCensusId&'-'&Uci_clinicalUnitId&'-'&Uci_encounterId as Uci_Assessment_Dxs_pk,
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+	Only(Uci_encounterId)						as Uci_Dxs_encounter,	
+	Uci_attributeId								as Uci_Dxs_attributedId,
+	Uci_terseform								as Uci_Dxs_terseform,
+	Max(Date(Uci_chartTime,'DD/MM/YYYY'))		as Uci_Dxs_chartTime
+Resident UCI_Assessment3
+Where len(Uci_terseform)>0 and Match(Uci_attributeId,'29111','42820','42910','46562','46532','24668.42850','42813','42913','46566','42854','46536','29120','42823','42901','46555','46534','24658',
+'42855','46563','24659','42851','46533','29121','42816','42908','46565','24666','42848','46539','29115','42812','42909','46557','46537','29118','42805','42902','24663',
+'42852','24660','42853','29119','42821','42914','46558','46538','46564','46535','29117','42825','42903','24667','42843','46553','46528','29113','42810','42916','24664',
+'42845','46554','46527','29112','42822','42911','24661','42847','29122','42824','42900','24672','42840','46561','46526','46559','46530','29114','42819','42904','24669',
+'42841','46556','46531','29116','42818','42912','24671','42846','29123','42814','42915','24662','42835','46560','46529','44969','44840','44857')
+Group By Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId,Uci_terseform;
+
+DROP Table UCI_Assessment3;
+
+UCI_Assessment_Dxs:
+LOAD
+	*,
+	If(Match(Uci_Dxs_attributedId,'29111','42820','42910','46562','46532','24668,42850'),'Cardiaco',
+	If(Match(Uci_Dxs_attributedId,'42813','42913','46566','42854','46536'),'Complicaciones',	
+	If(Match(Uci_Dxs_attributedId,'29120','42823','42901','46555','46534','24658','42855'),'Digestivo',
+	If(Match(Uci_Dxs_attributedId,'46563','24659','42851','46533','29121','42816','42908'),'EndocrinoInmunologico',
+	If(Match(Uci_Dxs_attributedId,'46565','24666','42848','46539','29115','42812','42909'),'Hematologico',
+	If(Match(Uci_Dxs_attributedId,'46557','46537','29118','42805','42902','24663','42852'),'Infeccioso',
+	If(Match(Uci_Dxs_attributedId,'24660','42853','29119','42821','42914','46558','46538'),'MusculoEsqueletico',
+	If(Match(Uci_Dxs_attributedId,'46564','46535','29117','42825','42903','24667','42843'),'Neoplasias',
+	If(Match(Uci_Dxs_attributedId,'46553','46528','29113','42810','42916','24664','42845'),'Neurologico',
+	If(Match(Uci_Dxs_attributedId,'46554','46527','29112','42822','42911','24661','42847'),'ObstetriciaGinecologia',
+	If(Match(Uci_Dxs_attributedId,'29122','42824','42900','24672','42840','46561','46526'),'Respiratorio',
+	If(Match(Uci_Dxs_attributedId,'46559','46530','29114','42819','42904','24669','42841'),'Toxicologico',
+	If(Match(Uci_Dxs_attributedId,'46556','46531','29116','42818','42912','24671','42846'),'Traumatismo',
+	If(Match(Uci_Dxs_attributedId,'29123','42814','42915','24662','42835','46560','46529'),'Urinario',
+	If(Match(Uci_Dxs_attributedId,'44969'),'DxPreOp',
+	If(Match(Uci_Dxs_attributedId,'44840','44857'),'Observaciones'
+	))))))))))))))))	as Uci_Diagnoticos_GrupoPatologico,
+	If(Match(Uci_Dxs_attributedId,'29111','42820','42910','46562','42813','42913','46566','29120','42823','42901','46555','46563','29121','42816','42908','46565','29115',
+	'42812','42909','46557','29118','42805','42902','29119','42821','42914','46558','46564','29117','42825','42903','46553','29113','42810','42916','46554','29112','42822',
+	'42911','29122','42824','42900','46561','46559','29114','42819','42904','46556','29116','42818','42912','29123','42814','42915','46560','44840','44857'),'Principal',
+	If(Match(Uci_Dxs_attributedId,'46532','24668','42850','42854','46536','46534','24658','42855','24659','42851','46533','24666','42848','46539','46537','24663','42852',
+	'24660','42853','46538','46535','24667','42843','46528','24664','42845','46527','24661','42847','24672','42840','46526','46530','24669','42841','46531','24671','42846',
+	'24662','42835','46529'),'Secundario', 
+	//If(Match(Uci_Dxs_attributedId,'44969'),'PreOp')
+	)) as Uci_Diagnosticos_Categoria
+Resident UCI_Assessment_Dxs2;
+
+DROP Table UCI_Assessment_Dxs2;
+
+STORE UCI_Assessment_Dxs into $(vG.LoadPath)UCI_Assessment_Dxs.qvd;
+
+//$tab LT
+//============================================================================
+LT_Assessment:
+Load distinct
+	Uci_Assessment_pk,
+	Uci_ptCensusId,
+	Uci_encounterId, 
+	Uci_clinicalUnitId,
+	//Uci_interventionId,
+	Uci_attributeId,
+	Uci_chartTime																		as Cal_pk,
+	Uci_chartTime																		as Uci_Data,
+	'UCI_STORE'																			as Tipus
+resident UCI_Assessment;
+
+
+STORE LT_Assessment into $(vG.LoadPath)LT_Assessment.qvd;
+DROP FIELD Uci_chartTime,Uci_ptCensusId,Uci_clinicalUnitId,Uci_encounterId,Uci_attributeId from UCI_Assessment;
+
+STORE UCI_Assessment into $(vG.LoadPath)UCI_Assessment.qvd;
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))

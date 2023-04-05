@@ -1,0 +1,239 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 19/01/2023
+// Autores : Pitter Cueto
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+// D_Encounter_1:
+// LOAD encounterId			as Uci_encounterId, 
+//      patientId				as encounter_patientId, 
+//      episodeId				as encounter_episodeId, 
+//      lifeTimeNumber			as Uci_encounter_HC, 
+//      Capitalize(lastName)&','&Capitalize(firstName)	as encounter_Name, 
+//      gender					as encounter_gender, 
+//      age					as encounter_age, 
+//      patientType			as encounter_patientType
+// FROM
+// $(vG.ExtractPath)D_Encounter.qvd(qvd);
+
+D_Intervention:
+LOAD interventionId			as Uci_interventionId, 
+     shortLabel				as Uci_intervention
+FROM
+$(vG.ExtractPath)D_Intervention.qvd(qvd);
+
+D_Attribute:
+LOAD attributeId			as Uci_attributeId, 
+     longLabel				as Uci_attribute
+FROM
+$(vG.ExtractPath)D_Attribute.qvd(qvd);
+
+D_CareProvider:
+LOAD careProviderId, 
+     lastName&','&firstName as careProvider_name, 
+      professionalDomain 	as careProvider_professionalDomain 
+FROM
+$(vG.ExtractPath)D_CareProvider.qvd(qvd);
+
+D_ClinicalUnit:
+LOAD clinicalUnitId			as Uci_clinicalUnitId, 
+     displayLabel 			as Uci_clinicalUnit 
+FROM
+$(vG.ExtractPath)D_ClinicalUnit.qvd(qvd);
+
+D_Bed:
+LOAD bedId, 
+     bedLabel
+FROM
+$(vG.ExtractPath)D_Bed.qvd(qvd);
+
+//$tab PtAssessment
+//==========================================================================
+PtAssessment:
+LOAD
+     encounterId    as Uci_encounterId,
+     ptDocumentId   as Uci_CultivoId,
+     partNumber,
+     interventionId as Uci_interventionId,
+     attributeId    as Uci_attributeId,
+     verboseForm    as Uci_verboseForm
+FROM
+$(vG.ExtractPath)PtAssessment_2022.qvd(qvd)
+Where clinicalUnitId='3' and year(chartTime)>=$(vYearMin);
+
+LOAD
+     encounterId    as Uci_encounterId,
+     ptDocumentId   as Uci_CultivoId,
+     partNumber,
+     interventionId as Uci_interventionId,
+     attributeId    as Uci_attributeId,
+     verboseForm    as Uci_verboseForm
+FROM
+$(vG.ExtractPath)PtAssessment_2023.qvd(qvd)
+Where clinicalUnitId='3' and year(chartTime)>=$(vYearMin);
+
+Cultivos:
+LOAD
+     Uci_encounterId,
+     Uci_CultivoId,
+     Uci_CultivoId  as Uci_Cultivo_TtoATBId,
+     date(Uci_verboseForm,'DD/MM/YYYY')     as Uci_Cultivo_Fecha,
+     date(Uci_verboseForm,'DD/MM/YYYY')     as Cal_pk
+Resident PtAssessment
+Where Uci_attributeId = '55715';
+
+join
+
+Cultivo_Localizacion:
+LOAD
+     Uci_encounterId,
+     Uci_CultivoId,
+     Uci_verboseForm     as Uci_Cultivo_Localizacion
+Resident PtAssessment
+Where Uci_attributeId = '55714';
+
+join
+
+Cultivo_Muestra:
+LOAD
+     Uci_encounterId,
+     Uci_CultivoId,
+     Uci_verboseForm     as Uci_Cultivo_Muestra
+Resident PtAssessment
+Where Uci_attributeId = '55608';
+
+join
+
+Cultivo_Origen:
+LOAD
+     Uci_encounterId,
+     Uci_CultivoId,
+     Uci_verboseForm     as Uci_Cultivo_Origen
+Resident PtAssessment
+Where Uci_attributeId = '55607';
+
+join
+
+Cultivo_Colonizacion:
+LOAD
+     Uci_encounterId,
+     Uci_CultivoId,
+     Uci_verboseForm     as Uci_Cultivo_Colonizacion
+Resident PtAssessment
+Where Uci_attributeId = '55625';
+
+//Antibiograma:
+Antibiogrma_Germen:
+LOAD
+     Uci_CultivoId,
+     Uci_CultivoId&'-'&partNumber  as Uci_AntibiogramaId,
+     Uci_verboseForm     as Uci_Antibiograma_Germen
+Resident PtAssessment
+Where Match(Uci_attributeId,'57593','57499');
+
+//join
+
+Antibiograma_Sensibilidad:
+LOAD
+     //Uci_CultivoId,
+     Uci_CultivoId&'-'&partNumber  as Uci_AntibiogramaId,
+     If(Match(Uci_attributeId,'57594','57500'),'Sensible',If(Match(Uci_attributeId,'57592','57501'),'Resistente','Intermedio'))   as Uci_Antibiograma_Sensibilidad,
+     Uci_verboseForm     as Uci_Antibiograma_Antibiotico
+Resident PtAssessment
+Where Match(Uci_attributeId,'57594','57500','57591','57592','57501');
+
+Tratamiento_Antibiotico2:
+LOAD
+     Uci_CultivoId  as Uci_Cultivo_TtoATBId,
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     Uci_verboseForm     as Uci_TtoATB_Antibiotico
+Resident PtAssessment
+Where Uci_attributeId ='57581';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     date(Uci_verboseForm,'DD/MM/YYYY')     as Uci_TtoATB_FInicio
+Resident PtAssessment
+Where Uci_attributeId ='57579';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     date(Uci_verboseForm,'DD/MM/YYYY')     as Uci_TtoATB_FTermino
+Resident PtAssessment
+Where Uci_attributeId ='57584';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     Uci_verboseForm     as Uci_TtoATB_Indicacion
+Resident PtAssessment
+Where Uci_attributeId ='57583';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     Uci_verboseForm     as Uci_TtoATB_Confirmacion
+Resident PtAssessment
+Where Uci_attributeId ='57580';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     Uci_verboseForm     as Uci_TtoATB_Cambio
+Resident PtAssessment
+Where Uci_attributeId ='57578';
+
+join
+
+LOAD
+     Uci_CultivoId&'-'&partNumber  as Uci_TtoATBId,
+     Uci_verboseForm     as Uci_TtoATB_TipoTto
+Resident PtAssessment
+Where Uci_attributeId ='57582';
+
+Tratamiento_Antibiotico:
+LOAD
+     '1'  as temp,
+     *,
+     Uci_TtoATB_FTermino-Uci_TtoATB_FInicio  as Uci_TtoATB_DiasATB
+Resident Tratamiento_Antibiotico2;
+
+Drop Table PtAssessment;
+Drop Table Tratamiento_Antibiotico2;
+
+D_Encounter:
+LOAD encounterId              as Uci_encounterId,
+     patientId				as encounter_patientId, 
+     episodeId				as encounter_episodeId, 
+     lifeTimeNumber			as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)	as encounter_Name, 
+     gender					as encounter_gender, 
+     age					as encounter_age, 
+     patientType			as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd)
+//Where Exists(Uci_encounterId,encounterId)
+;
+
+
+//$tab Calendar
+//==============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))

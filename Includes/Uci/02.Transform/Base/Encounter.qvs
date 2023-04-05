@@ -1,0 +1,14 @@
+//$tab D_Encounter
+//============================================================================
+D_Encounter:
+LOAD encounterId			as Uci_encounterId, 
+     patientId				as encounter_patientId, 
+     episodeId				as encounter_episodeId, 
+     lifeTimeNumber			as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)	as encounter_Name, 
+     gender					as encounter_gender, 
+     age					as encounter_age, 
+     patientType			as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd)
+where exists(encounterId);

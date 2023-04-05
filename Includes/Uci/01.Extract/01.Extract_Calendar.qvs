@@ -1,0 +1,68 @@
+
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Extract
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Calendario
+//============================================================================
+
+let vDateMin=num(makedate($(vYearMin)));
+let vDateMax=num(floor(YearEnd(today())));
+//let vDateMax=num(today());
+
+
+QVD_CALENDAR2:
+load
+date($(vDateMin) +iterno()-1)  as DateGen
+autogenerate 1
+while $(vDateMin) +iterno()-1 <= $(vDateMax);
+
+QVD_CALENDAR:
+load
+	date(DateGen,'DD/MM/YYYY')														as Cal_pk,
+	date(DateGen,'DD/MM/YYYY')														as Cal_Date,
+	day(DateGen) 																	as Cal_Day,
+	left(date(DateGen,'DD/MM/YYYY'),5)												as Cal_DayMonth,
+    year(DateGen) 																	as Cal_Year,
+    WeekDay(DateGen)																as Cal_WeekDay,
+    num(Month(DateGen),'00')														as Cal_MonthNum,
+	if(month(DateGen)=1,'Ene',
+	if(month(DateGen)=2,'Feb',
+	if(month(DateGen)=3,'Mar',
+	if(month(DateGen)=4,'Abr',
+	if(month(DateGen)=5,'May',
+	if(month(DateGen)=6,'Jun',
+	if(month(DateGen)=7,'Jul',
+	if(month(DateGen)=8,'Ago',
+	if(month(DateGen)=9,'Sep',
+	if(month(DateGen)=10,'Oct',
+	if(month(DateGen)=11,'Nov',
+	if(month(DateGen)=12,'Dic'))))))))))))											as Cal_Month,
+	if(month(DateGen)=1,'Ene'&right(year(DateGen),2),
+	if(month(DateGen)=2,'Feb'&right(year(DateGen),2),
+	if(month(DateGen)=3,'Mar'&right(year(DateGen),2),
+	if(month(DateGen)=4,'Abr'&right(year(DateGen),2),
+	if(month(DateGen)=5,'May'&right(year(DateGen),2),
+	if(month(DateGen)=6,'Jun'&right(year(DateGen),2),
+	if(month(DateGen)=7,'Jul'&right(year(DateGen),2),
+	if(month(DateGen)=8,'Ago'&right(year(DateGen),2),
+	if(month(DateGen)=9,'Sep'&right(year(DateGen),2),
+	if(month(DateGen)=10,'Oct'&right(year(DateGen),2),
+	if(month(DateGen)=11,'Nov'&right(year(DateGen),2),
+	if(month(DateGen)=12,'Dic'&right(year(DateGen),2)))))))))))))					as Cal_MonthYear
+resident QVD_CALENDAR2; 	
+DROP TABLE QVD_CALENDAR2;
+
+STORE QVD_CALENDAR INTO $(vG.ExtractPath)QVD_CALENDAR.qvd (qvd);
+

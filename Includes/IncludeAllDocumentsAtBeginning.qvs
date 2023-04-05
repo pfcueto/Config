@@ -1,0 +1,63 @@
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='#.##0,00 €;-#.##0,00 €';
+SET TimeFormat='hh:mm:ss';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff]';
+SET MonthNames='Ene;Feb;Mar;Abr;May;Jun;Jul;Ago;Sep;Oct;Nov;Dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+
+//Variable para almacenar inicio recarga documento
+LET LastExecBeginTime = Now();
+
+//Carpeta almacenaje QVD extraidos ERP
+SET vFolderQVDsFromERP = ..\..\SourceData\QVDsFromERP\;
+
+//Carpeta almacenaje QVD extraidos OPEN RETAIL
+SET vFolderQVDsFromOR = ..\..\SourceData\QVDsFromOR\;
+
+//Carpeta almacenaje QVD extraidos TCR
+SET vFolderQVDsFromTCR = ..\..\SourceData\QVDsFromTCR\;
+
+
+//Carpeta almacenaje datos de negocio transformados
+SET vFolderAdaptedQVDs = ..\..\SourceData\AdaptedQVDs\;
+
+//Carpeta almacenaje excels suplementarios
+SET vFolderExcels = ..\..\SourceData\Excel\;
+
+//Carpeta almacenaje excels de configuracion
+SET cFolderSourceExcelConfig = ..\..\Config\Excels\;
+
+//Mandante ERP
+SET vSAPERPClient = 100;
+
+//Esquema base de datos
+SET vErpDatabaseSchema = ctp;
+SET vOpenRetailOroDatabaseSchema = dbo;
+SET vTCRDatabaseSchema = tcr.dbo;
+
+//Idioma para textos 
+SET vSAPTextLanguage = S; //S=Castellano, c=Català, E=English
+
+//Carga facturas
+SET vFechaMinimaCargaVentas = 20120101; //No se cargarán fechas anteriores a ésta
+SET vDeltaLoadVBRKMonthsBefore = 2; //Número de meses anteriores a cargar (valor igual a cero sólo se cargará desde 1 enero mes actual)
+
+//Carga encargos
+//SET vFechaMinimaCargaEncargos = 20120101; //No se cargarán fechas anteriores a ésta
+//SET vDeltaLoadVBAKMonthsBefore = 100; //Número de meses anteriores a cargar (valor igual a cero sólo se cargará desde 1 enero mes actual)
+
+//Carga historial de pedidos (EKBE y EKKO_EKPO)
+SET vFechaMinimaPedidos = 20120101; //No se cargarán fechas anteriores a ésta
+SET vDeltaLoadPedidosMonthsBefore = 2; //Número de meses anteriores a cargar (valor igual a cero sólo se cargará desde 1 enero mes actual)
+
+//Carga verificaciones de factura (RBCO)
+SET vEjercicioMinimoRBCO = 2012; //No se cargarán fechas anteriores a ésta
+SET vDeltaLoadRBCOEjerciciosBefore = 2; //Número de ejercicios anteriores a cargar 
+
+//Carga historial de ajustes de stock (MKPF-MSEG)
+SET vFechaMinimaMKPF = 20120101; //No se cargarán fechas anteriores a ésta
+SET vDeltaLoadMKPFMonthsBefore = 2; //Número de meses anteriores a cargar (valor igual a cero sólo se cargará desde 1 enero mes actual)

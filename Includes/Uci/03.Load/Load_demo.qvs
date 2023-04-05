@@ -1,0 +1,188 @@
+Trace('Inicio del QVS Load');
+
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Load
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab SectionAccess
+//============================================================================
+LET vG.SectionAccess=vG.BasePath&'Config\Includes\Uci\03.Load\Base\SectionAccess.qvs';
+$(Must_Include=$(vG.SectionAccess))
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\Uci\03.Load\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+
+//$tab FACT
+//============================================================================
+UCI_Census: 
+LOAD * FROM $(vG.LoadPath)UCI_Census.qvd (qvd);
+
+UCI_Assessment: 
+LOAD * FROM $(vG.LoadPath)UCI_Assessment.qvd (qvd);
+
+UCI_SiteCare: 
+LOAD * FROM $(vG.LoadPath)UCI_SiteCare.qvd (qvd);
+
+UCI_Medication:
+LOAD * FROM $(vG.LoadPath)UCI_Medication.qvd (qvd);
+
+UCI_Treatment: 
+LOAD * FROM $(vG.LoadPath)UCI_Treatment.qvd (qvd);
+
+UCIMDB_Main: 
+LOAD * FROM $(vG.LoadPath)UCIMDB_Main.qvd (qvd);
+
+UCI_DiasAccesos: 
+LOAD * FROM $(vG.LoadPath)UCI_DiasAccesos.qvd (qvd);
+
+UCIMDB_Cultivos:
+LOAD * FROM $(vG.LoadPath)UCIMDB_Cultivos.qvd (qvd);
+
+UCIMDB_Antibiograma:
+LOAD * FROM $(vG.LoadPath)UCIMDB_Antibiograma.qvd (qvd);
+
+UCIMDB_Sensibilidad:
+LOAD * FROM $(vG.LoadPath)UCIMDB_Sensibilidad.qvd (qvd);
+
+//$tab LT
+//============================================================================
+LT:
+LOAD * FROM $(vG.LoadPath)LT_Census.qvd(qvd);
+join
+LOAD * FROM $(vG.LoadPath)LT_Assessment.qvd(qvd);
+join
+LOAD * FROM $(vG.LoadPath)LT_SiteCare.qvd(qvd);
+join
+LOAD * FROM $(vG.LoadPath)LT_Treatment.qvd(qvd);
+join
+LOAD * FROM $(vG.LoadPath)LT_UciMdb.qvd(qvd);
+join
+LOAD * FROM $(vG.LoadPath)LT_Medication.qvd(qvd);
+left join (LT)
+Load  distinct
+	Uci_ptCensusId,
+	Uci_clinicalUnitId,
+	Uci_encounterId,
+  Uci_Dxs_encounter,	
+	Uci_Dxs_attributedId,
+	Uci_Dxs_terseform,
+	//Uci_Dxs_chartTime,
+  Uci_Diagnoticos_GrupoPatologico,
+  Uci_Diagnosticos_Categoria
+FROM $(vG.LoadPath)UCI_Assessment_Dxs.qvd (qvd);
+
+
+
+
+//$tab Mestres
+//============================================================================
+LU_Servicio: 
+LOAD * FROM $(vG.LoadPath)LU_Servicio.qvd (qvd);
+
+LU_Patologia: 
+LOAD * FROM $(vG.LoadPath)LU_Patologia.qvd (qvd);
+
+LU_Procedencia: 
+LOAD * FROM $(vG.LoadPath)LU_Procedencia.qvd (qvd);
+
+LU_Necropsia: 
+LOAD * FROM $(vG.LoadPath)LU_Necropsia.qvd (qvd);
+
+LU_MotivoIngreso: 
+LOAD * FROM $(vG.LoadPath)LU_MotivoIngreso.qvd (qvd);
+
+//$tab Encounter
+//============================================================================
+LET vG.Encounter=vG.BasePath&'Config\Includes\Uci\03.Load\Base\Encounter.qvs';
+$(Must_Include=$(vG.Encounter))
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\03.Load\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))
+
+//$tab Variables
+//============================================================================
+
+[Expression]:
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Diseno);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Calendari);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Activitat);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Variables);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Diagnostics);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Infeccions);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Medicacio);
+
+Let vNumberOfRows = NoOfRows('Expression');
+
+For vI = 0 to (vNumberOfRows - 1)
+  Let vVariable_Name = Peek('Variable',vI,'Expressio');
+  Let [$(vVariable_Name)] = Peek('Expressio',vI,'Expressio');
+Next
+
+let vVariable_Name=null();
+let vNumberOfRows=null();
+let vI=null();
+
+
+//$tab Reporting
+//============================================================================
+Dimensiones:
+LOAD * INLINE [
+_SSR_Dimensiones,SSR_DimensionesID,_SSR_Area_Dim
+Any,#1#, Activitat
+Mes,#2#, Activitat
+Patologia,#3#, Activitat
+Procedencia,#4#, Activitat
+Pacient HC,#5#, Activitat
+Edat,#6#, Activitat
+Sexe,#7#, Activitat
+Desti,#8#, Activitat
+Motiu ingres,#9#, Activitat
+Data ingres,#10#, Activitat
+Data alta,#11#, Activitat
+Categoria diagnostica,#12#, Activitat
+Grup diagnostic,#13#, Activitat
+Diagnostic,#14#, Activitat
+
+];
+
+Expresiones:
+LOAD * INLINE [
+_SSR_Expresiones,SSR_ExpresionesID,_SSR_Area_Exp
+Altes,#1#, Activitat
+Exitus,#2#, Activitat
+Ingressos,#3#, Activitat
+Exitus 24h,#4#, Activitat
+Taxa mortalitat,#5#, Activitat
+Reingres24h,#6#, Activitat
+Taxa reingres,#7#, Activitat
+Estada mitjana,#8#, Activitat
+
+Pac. VM,#1#, Procediments
+Pac. Traqueostomia,#2#, Procediments
+Pac. Intubacio,#3#, Procediments
+Dies RVS SG,#4#, Procediments
+Dies VM,#5#, Procediments
+
+];
+
+
+drop field Paciente_Nombre;
+
+
+Trace('Fin del QVS Load');

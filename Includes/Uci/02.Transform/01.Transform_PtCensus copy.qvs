@@ -1,0 +1,123 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+D_ClinicalUnit:
+LOAD clinicalUnitId	as Uci_clinicalUnitId, 
+     displayLabel as Uci_clinicalUnit 
+FROM
+$(vG.ExtractPath)D_ClinicalUnit.qvd(qvd);
+
+//$tab PtCensus
+// Necessitem Data Ingres - Data Alta per assignar assessment dins del ingrés que pertany
+//============================================================================
+UCI_Census:
+LOAD ptCensusId														as Uci_ptCensusId,
+	 clinicalUnitId													as Uci_clinicalUnitId,
+	 encounterId													as Uci_encounterId,
+	 encounterId,
+	 date(inTime,'DD/MM/YYYY hh:mm')								as Uci_Data_Ingres_hhmm, 
+     date(outTime,'DD/MM/YYYY hh:mm')								as Uci_Data_Alta_hhmm,
+     date(floor(outTime),'DD/MM/YYYY')								as Uci_Data_Alta,
+	 if(isnull(outTime),'Si','No')									as Uci_Paciente_Actual,
+     date(floor(inTime),'DD/MM/YYYY')								as Uci_Data_Ingres,
+     dischargeDisposition											as Uci_Destino, 
+     dischargeLocation												as Uci_Observaciones, 
+     lengthOfStay													as Uci_LOS, 
+     interval(lengthOfStay/1440, 'D hh:mm' )						as Uci_LOS_Dhm,	
+   	 if(lengthOfStay<=1440,'Si','No')								as Uci_LOS24h,	
+     if(is24HrReAdmit=0,'No','Si')									as Uci_Reingreso24h, 
+     if(isDeceased=0,'No','Si')										as Uci_Exitus
+FROM
+$(vG.ExtractPath)PtCensus.qvd(qvd)
+// Solo UCI
+where clinicalUnitId='3' and year(inTime)>=$(vYearMin);
+left join (UCI_Census)
+LOAD 
+	 encounterId													as Uci_encounterId,
+	 min(date(inTime,'DD/MM/YYYY hh:mm'))							as Uci_Data_Ingres_hhmm_MIN, 
+     max(date(outTime,'DD/MM/YYYY hh:mm'))							as Uci_Data_Alta_hhmm_MAX,
+	 min(hour(inTime))							as Uci_Hora_Ingres_hhmm_MIN, 
+     max(hour(outTime))							as Uci_Hora_Alta_hhmm_MAX
+FROM
+$(vG.ExtractPath)PtCensus.qvd(qvd)
+// Solo UCI
+where clinicalUnitId='3' and year(inTime)>=$(vYearMin)
+group by encounterId;
+
+//$tab Encounter
+//============================================================================
+LET vG.Encounter=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Encounter.qvs';
+$(Must_Include=$(vG.Encounter))
+
+//$tab LT
+//============================================================================
+LT_Census:
+Load distinct	
+	Uci_ptCensusId,
+	Uci_encounterId, 
+	Uci_clinicalUnitId,
+	Uci_Data_Alta																		as Cal_pk,
+	Uci_Data_Alta																		as Uci_Data,
+	'UCI_ALT'																	as Tipus
+resident UCI_Census;
+concatenate
+Load distinct	
+	Uci_ptCensusId,
+	Uci_encounterId, 
+	Uci_clinicalUnitId,
+	Uci_Data_Ingres																	as Cal_pk,
+	Uci_Data_Ingres																	as Uci_Data,
+	'UCI_ING'																	as Tipus
+resident UCI_Census;
+
+STORE LT_Census into $(vG.LoadPath)LT_Census.qvd;
+DROP FIELD encounterId,Uci_clinicalUnitId,Uci_encounterId from UCI_Census;
+STORE UCI_Census into $(vG.LoadPath)UCI_Census.qvd;
+
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))
+
+//$tab Variables
+//============================================================================
+
+[Expression]:
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Diseno);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Calendari);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Activitat);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Variables);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Diagnostics);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Infeccions);
+concatenate
+LOAD Variable,Expressio FROM $(vG.ImportPath_Interno)UCI.Variables.xlsx (ooxml, embedded labels, table is Medicacio);
+
+Let vNumberOfRows = NoOfRows('Expression');
+
+For vI = 0 to (vNumberOfRows - 1)
+  Let vVariable_Name = Peek('Variable',vI,'Expressio');
+  Let [$(vVariable_Name)] = Peek('Expressio',vI,'Expressio');
+Next
+
+let vVariable_Name=null();
+let vNumberOfRows=null();
+let vI=null();

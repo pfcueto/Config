@@ -1,0 +1,173 @@
+//$tab Main
+//============================================================================
+// Proyecto: UCI
+// Empresa : HREUS
+// Modelo  : Transform
+// Creación: 10/01/2019
+// Autores : Izertis. Josep Ma Sarroche
+//============================================================================
+
+//$tab Periodo
+//============================================================================
+LET vG.Periodo=vG.BasePath&'Config\Includes\UCI\01.Extract\Base\Periodo.qvs';
+$(Must_Include=$(vG.Periodo))
+
+//$tab Labels
+//============================================================================
+D_Encounter:
+LOAD encounterId			                         as Uci_encounterId, 
+     patientId				                         as encounter_patientId, 
+     episodeId				                         as encounter_episodeId, 
+     lifeTimeNumber			                         as Uci_encounter_HC, 
+     Capitalize(lastName)&','&Capitalize(firstName)    as encounter_Name, 
+     gender					                    as encounter_gender, 
+     age					                         as encounter_age, 
+     patientType			                         as encounter_patientType
+FROM
+$(vG.ExtractPath)D_Encounter.qvd(qvd);
+
+D_Intervention:
+LOAD interventionId			                         as Uci_interventionId, 
+     shortLabel				                    as Uci_intervention
+FROM
+$(vG.ExtractPath)D_Intervention.qvd(qvd);
+
+D_Attribute:
+LOAD attributeId			                         as Uci_attributeId, 
+     longLabel				                         as Uci_attribute
+FROM
+$(vG.ExtractPath)D_Attribute.qvd(qvd);
+
+D_CareProvider:
+LOAD careProviderId, 
+     lastName&','&firstName                            as careProvider_name, 
+      professionalDomain 	                         as careProvider_professionalDomain 
+FROM
+$(vG.ExtractPath)D_CareProvider.qvd(qvd);
+
+D_ClinicalUnit:
+LOAD clinicalUnitId			                         as Uci_clinicalUnitId, 
+     displayLabel 			                         as Uci_clinicalUnit 
+FROM
+$(vG.ExtractPath)D_ClinicalUnit.qvd(qvd);
+
+D_Bed:
+LOAD bedId, 
+     bedLabel
+FROM
+$(vG.ExtractPath)D_Bed.qvd(qvd);
+
+
+//$tab PtMedication
+// Nombre de Drogas: attributeId 28813,15240,3200,15243,28814
+//============================================================================
+PtMedication:
+LOAD ptMedicationId								as Uci_ptMedicationId, 
+     interventionId								as Uci_interventionId, 
+     attributeId								as Uci_attributeId, 
+     ongoingId, 
+     encounterId								as Uci_encounterId, 
+     chartTime, 
+     date(chartTime,'DD/MM/YYYY hh:mm')			     as Uci_chartTime_hhmm,
+     date(floor(chartTime),'DD/MM/YYYY')		     as Uci_chartTime,
+     date(floor(chartTime),'DD/MM/YYYY')		     as Cal_pk,
+     utcChartTime, 
+     descriptorId, 
+     materialId, 
+     clinicalUnitId								as Uci_clinicalUnitId, 
+     siteId, 
+     careProviderId, 
+     terseForm									as Uci_terseForm, 
+     verboseForm								as Uci_verboseForm, 
+     valueString								as Uci_valueString, 
+     valueDateTime								as Uci_valueDateTime, 
+     utcValueDateTime, 
+     valueNumber								as Uci_valueNumber, 
+     unitOfMeasure, 
+     baseValueNumber, 
+     baseUOM, 
+     valueInstanceId, 
+     valueConcept, 
+     lowerNormal, 
+     upperNormal, 
+     remark, 
+     isPrescribed, 
+     mainState, 
+     actionState, 
+     chartDayId								as Uci_chartDayId, 
+     chartTimeId								as Uci_chartTimeId, 
+     caseId, 
+     systemId, 
+     cisOrderId, 
+     storeTime, 
+     date(storeTime,'DD/MM/YYYY hh:mm')			     as Uci_storeTime_hhmm, 
+     date(floor(storeTime),'DD/MM/YYYY')		     as Uci_storeTime, 
+     utcStoreTime, 
+     bedId, 
+     cisPtInterventionId, 
+     partNumberId, 
+     partNumber
+FROM
+$(vG.ExtractPath)PtMedication.qvd(qvd)
+WHERE clinicalUnitId='3';
+
+UCI_Medication2:
+LOAD
+	Cal_pk,
+	Uci_ptMedicationId,
+	Uci_attributeId,
+	Uci_interventionId,
+	Uci_clinicalUnitId,				// left join
+	Uci_encounterId, 				// left join
+	Uci_storeTime_hhmm,
+	Uci_storeTime,
+	Uci_chartTime_hhmm,
+	Uci_chartTime,
+	Uci_chartTimeId,
+	Uci_valueString,
+	Uci_terseForm,
+	Uci_valueDateTime,
+	Uci_valueNumber
+resident PtMedication;
+
+drop table PtMedication;
+
+UCI_Medication:
+//Drogas
+LOAD Distinct
+	Uci_clinicalUnitId&'-'&Uci_encounterId&'-'&Uci_attributeId&'-'&Uci_chartTime	as Uci_Medication_pk,
+     Uci_encounterId,
+	Uci_encounterId                                                                                     as Uci_Drugs_encounter,
+     Uci_clinicalUnitId,
+     Uci_attributeId,
+     Capitalize(Uci_terseForm)                                                                                      as Uci_Drugs_terseform,
+     Subfield(Capitalize(Uci_terseForm),' ',1)                                                                                     as Uci_Drugs_terseform_c,
+     Uci_chartTime                                                                                                 as Uci_Drugs_Data,
+     Uci_chartTime
+Resident UCI_Medication2
+WHERE Match(Uci_attributeId,28813,15240,3200,15243,28814);
+DROP Table UCI_Medication2;
+
+//$tab LT
+//============================================================================
+LT_Medicacion:
+Load distinct
+	Uci_Medication_pk,
+	Uci_encounterId, 
+	Uci_clinicalUnitId,
+	Uci_attributeId,
+	Uci_chartTime												as Cal_pk,
+	Uci_chartTime												as Uci_Data,
+	'UCI_STORE'												as Tipus
+resident UCI_Medication;
+
+
+STORE LT_Medicacion into $(vG.LoadPath)LT_Medication.qvd;
+DROP FIELD Uci_encounterId,Uci_clinicalUnitId,Uci_attributeId,Uci_chartTime,Cal_pk from UCI_Medication;
+STORE UCI_Medication into $(vG.LoadPath)UCI_Medication.qvd;
+
+
+//$tab Calendar
+//============================================================================
+LET vG.Calendar=vG.BasePath&'Config\Includes\Uci\02.Transform\Base\Calendar.qvs';
+$(Must_Include=$(vG.Calendar))

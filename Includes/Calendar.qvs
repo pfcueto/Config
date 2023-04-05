@@ -1,0 +1,66 @@
+//Construcción calendario cliente
+
+LET vCalendarMinDate = num(MakeDate(Year(AddMonths(Today(0),-1))-5,01,01));
+LET vCalendarMaxDate = num(MakeDate(Year(AddMonths(Today(0),-1)),12,31));
+LET vCalendarToday = num(Today(0));
+
+//*************** Temporary Calendar ***************
+TempCalendar:
+LOAD 
+	$(vCalendarMinDate) + rowno() - 1 AS [Num], 
+	date($(vCalendarMinDate) + rowno() - 1) AS [TempDate]
+AUTOGENERATE 
+$(vCalendarMaxDate) - $(vCalendarMinDate) + 1; 
+
+
+//*************** Master Calendar ***************
+CALENDARIO:
+LOAD
+        [Num]                                                         as [%FechaID],
+	[TempDate]                                                    as [Fecha],
+	// WeekDay([TempDate]) & ' ' & Date([TempDate])                  as [Fecha larga],
+	Year([TempDate])                                              as [Año],
+	// 'S' & ceil(month([TempDate] )/6)                              as [Semestre],
+	'T' & Ceil(Month([TempDate] )/3)                              as [Trimestre],
+	Month([TempDate])                                             as [Mes],
+	Week([TempDate])                                              as [Semana],
+
+	DayNumberOfYear([TempDate])                                   as [Día del año],
+	Day([TempDate])                                               as [Día del mes],
+	Weekday([TempDate])                                           as [Día de la semana],
+	num(Month([TempDate]))					      as [MesNum],	
+	Date(MonthStart([TempDate]), 'YYYY.MM')                       as [Año-Mes],	
+	Year([TempDate])& 'T' & ceil(month([TempDate] )/3)            as [Año-Trimestre],
+	WeekYear([TempDate]) & 'W' & Num(Week([TempDate]),'00')       as [Año-Semana],
+	// Date(MonthStart([TempDate]), 'MMM.YYYY')                      as [Mes-Año],
+	
+	// InYearToDate([TempDate], $(vCalendarToday), 0, 1) * -1        as [CurrentYTDFlag],
+	// InYearToDate([TempDate], $(vCalendarToday), -1, 1) * -1       as [LastYTDFlag],    
+	// InMonthToDate([TempDate], $(vCalendarToday), 0) * -1          as [CurrentMTDFlag],
+	// InMonthToDate([TempDate], $(vCalendarToday), -1) * -1         as [LastMTDFlag],
+
+	//InYearToDate ([TempDate],MakeDate(Year([TempDate]),Num(Month(Today(0))),Day(Today(0))),0) as [YTDFlag],
+	//InYearToDate ([TempDate],Date(Num(MakeDate(Year([TempDate]),Num(Month(Today(0))),Day(Today(0))))-1),0) as [YTDFlag],
+	InYearToDate ([TempDate],Date(Num(MakeDate(Year([TempDate]),Num(Month(Today(0))),Day(Today(0))))),0) as [YTDFlag],
+	InMonthToDate([TempDate],MakeDate(Year([TempDate]),Num(Month(Today(0))),Day(Today(0))),0) as [MTDFlag],
+
+	//InYearToDate ([TempDate],Date(Num(MakeDate(Year([TempDate]),Num(Month(today(0)-day(today(0)))),Day(today(0)-day(today(0)))))),0) as [YTMCFlag],
+	InYearToDate ([TempDate],Date(Num(MakeDate(Year([TempDate]),Num(Month(Addmonths(today(0),-1))),Day(MonthEnd(Addmonths(today(0),-1)))))),0) as [YTMCFlag],
+	InMonthToDate([TempDate],MakeDate(Year([TempDate]),Num(Month(Addmonths(today(0),-1))),Day(MonthEnd(Addmonths(today(0),-1)))),0) as [MCFlag],
+	
+	// 1/(1+num('31/12/'&Year([TempDate]))-num('01/01/'&Year([TempDate]))) as [YearDayWeight], //Multiplicador para ponderar peso del día en año (tiene en cuenta bisiestos)
+	
+	// YearName([TempDate],0,1)                                      as [Ejercicio fiscal],
+	// 'AF ' & Right(Year(AddMonths([TempDate],-1)),2) & '-' & Right(Year(AddMonths([TempDate],11)),2) AS FiscalYear,
+	// 'AF ' & Right(Year(AddMonths([TempDate],-1)),2) & '-' & Right(Year(AddMonths([TempDate],11)),2) & ' T' & Ceil(Month(AddMonths([TempDate],11))/3) AS FiscalYearQuarter,
+	// Num(Month(AddMonths([TempDate],11)),00) AS FiscalMonthNum
+
+	if(Weekday([TempDate])>4,'S','N')                             as [Fin de semana] // Marca de fin de semana
+	
+RESIDENT TempCalendar 
+ORDER BY [TempDate] ASC;
+DROP TABLE TempCalendar; 
+
+SET vCalendarMinDate = ;
+SET vCalendarMaxDate = ;
+SET vCalendarToday = ;

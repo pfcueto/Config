@@ -1,0 +1,12 @@
+CIE_10:
+LOAD A, 
+     B, 
+     C, 
+     D, 
+     E, 
+     F, 
+     G, 
+     H
+FROM
+//[D:\Qlikview Production\Config\Excels\Uci\Listado_CIE_10.xlsx]
+From $(vG.ImportPath_Interno)Listado_CIE_10.xlsx (ooxml, no labels, table is CIM10MC_2022_2023_20211220);
