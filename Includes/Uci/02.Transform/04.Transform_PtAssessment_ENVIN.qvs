@@ -143,7 +143,7 @@ Resident PtAssessment
 Where Match(Uci_attributeId,'57593','57499');
 
 //join
-// Sensibilidad antibiotica de los germenes aislados
+// Sensibilidad antibiotica de los germenes aislados en cultivos
 Antibiograma_Sensibilidad:
 LOAD
      //Uci_CultivoId,
